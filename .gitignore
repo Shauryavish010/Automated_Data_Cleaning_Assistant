@@ -1,0 +1,4 @@
+adca/
+__pycache__/
+*.pyc
+.env
