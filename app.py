@@ -2,9 +2,12 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utils.profiler import get_dataset_summary
+from utils.profiler import get_column_statistics
 from utils.cleaner import clean_data
 from utils.dashboard import missing_value_summary
 from utils.file_loader import load_csv
+from utils.classifier import classify_columns
+from utils.recommendation import generate_recommendations
 
 st.set_page_config(
     page_title="Automated Data Cleaning Assistant",
@@ -31,6 +34,24 @@ if uploaded_file is not None:
         st.dataframe(df.head())
         st.subheader("Data Information")
 
+        st.subheader("Column Classification")
+        classification_df = classify_columns(df)
+        st.dataframe(
+        classification_df,
+        use_container_width=True,
+        hide_index=True
+        )
+
+        #classification_df = classify_columns(df)
+        recommendation_df = generate_recommendations(df, classification_df)
+        st.subheader("Cleaning Recommendations")
+
+        st.dataframe(
+            recommendation_df,
+            use_container_width=True,
+            hide_index=True
+        )
+
         #Statistics
         summary = get_dataset_summary(df)
 
@@ -38,6 +59,15 @@ if uploaded_file is not None:
         columns = summary["columns"]
         missing_values = summary["missing_values"]
         duplicate_rows = summary["duplicate_rows"]
+
+        column_stats = get_column_statistics(df)
+
+        st.subheader("Column Statistics")
+        st.dataframe(
+            column_stats,
+            use_container_width = True,
+            hide_index= True
+        )
 
         #Display metrics
         col1, col2, col3, col4 = st.columns(4)
