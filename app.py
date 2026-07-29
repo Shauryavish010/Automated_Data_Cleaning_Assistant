@@ -37,17 +37,7 @@ if uploaded_file is not None:
         st.subheader("Column Classification")
         classification_df = classify_columns(df)
         st.dataframe(
-        classification_df,
-        use_container_width=True,
-        hide_index=True
-        )
-
-        #classification_df = classify_columns(df)
-        recommendation_df = generate_recommendations(df, classification_df)
-        st.subheader("Cleaning Recommendations")
-
-        st.dataframe(
-            recommendation_df,
+            classification_df,
             use_container_width=True,
             hide_index=True
         )
@@ -61,6 +51,15 @@ if uploaded_file is not None:
         duplicate_rows = summary["duplicate_rows"]
 
         column_stats = get_column_statistics(df)
+        st.write("Column Stats DataFrame")
+        st.write(column_stats.columns.tolist())
+        st.dataframe(column_stats)
+        classification_df = classify_columns(df)
+        st.write("Classification DataFrame")
+        st.write(classification_df.columns.tolist())
+        st.dataframe(classification_df)
+        recommendation_df = generate_recommendations(classification_df, column_stats)
+        st.subheader("Cleaning Recommendations")
 
         st.subheader("Column Statistics")
         st.dataframe(

@@ -62,25 +62,45 @@ RULES = {
     }
 }
 
-def generate_recommendations(df, classification_df):
+def generate_recommendations(classification_df, column_stats):
+
+    merged_df = classification_df.merge(
+        column_stats,
+        on="Column",
+        how="left"
+    )
+
+    print("Merged Columns:", merged_df.columns.tolist())
+
     recommendations = []
 
-    for _, row in classification_df.iterrows():
-        column = row["Column"]
-        detected_type = row["Detected Type"]
+    for i, row in merged_df.iterrows():
 
-        missing = df[column].isna().sum()
-        missing_percent = round((missing / len(df)) * 100, 2)
+        try:
+            print(f"\nProcessing row {i}")
+            print(row.to_dict())
 
-        rule = RULES.get(detected_type, RULES["Unknown"])
+            detected_type = row["Detected Type"]
+            column = row["Column"]
 
-        recommendations.append({
-            "Column": column,
-            "Detected Type": detected_type,
-            "Missing Values": missing,
-            "Missing %": missing_percent,
-            "Recommendation": rule["recommendation"],
-            "Reason": rule["reason"],
-            "Auto Applicable": rule["auto"]
-        })
+            missing = row["Missing Values"]
+            missing_percent = row["Missing %"]
+
+            rule = RULES.get(detected_type, RULES["Unknown"])
+
+            recommendations.append({
+                "Column": column,
+                "Detected Type": detected_type,
+                "Missing Values": missing,
+                "Missing %": missing_percent,
+                "Recommendation": rule["recommendation"],
+                "Reason": rule["reason"],
+                "Auto Applicable": rule["auto"]
+            })
+
+        except Exception as e:
+            print("FAILED ROW:")
+            print(row.to_dict())
+            raise e
+
     return pd.DataFrame(recommendations)

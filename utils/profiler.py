@@ -19,7 +19,7 @@ def get_column_statistics(df):
             "Column": column,
             "Pandas Type": str(series.dtype),
             "Rows": len(series),
-            "Missing Vlaues": series.isna().sum(),
+            "Missing Values": series.isna().sum(),
             "Missing %": round(series.isna().mean()*100, 2),
             "Unique Values": series.nunique(),
             "Unique %": round(series.nunique()/len(series)*100, 2),
