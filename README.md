@@ -17,8 +17,16 @@ The application analyzes CSV datasets, detects data quality issues, classifies c
 - 📈 Before/After cleaning comparison
 - ⬇️ Download cleaned dataset
 
+### Overview
 ![Overview](utils/screenshots/Overview.png)
+### Data Quality
 ![Data Quality](utils/screenshots/Data_Quality.png)
+### Recommendation
+![Recommendation](utils/screenshots/Recommendation.png)
+### Auto Cleaning
+![Auto Cleaning](utils/screenshots/Auto_Cleaning.png)
+### Manual Cleaning
+![Manual Cleaning](utils/screenshots/Manual_Cleaning.png)
 
 ## 🛠️ Tech Stack
 
