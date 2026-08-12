@@ -67,15 +67,15 @@ def generate_recommendations(classification_df, column_stats):
         how="left"
     )
 
-    print("Merged Columns:", merged_df.columns.tolist())
+    #print("Merged Columns:", merged_df.columns.tolist())
 
     recommendations = []
 
     for i, row in merged_df.iterrows():
 
         try:
-            print(f"\nProcessing row {i}")
-            print(row.to_dict())
+            #print(f"\nProcessing row {i}")
+            #print(row.to_dict())
 
             detected_type = row["Detected Type"]
             column = row["Column"]
@@ -99,8 +99,8 @@ def generate_recommendations(classification_df, column_stats):
             })
 
         except Exception as e:
-            print("FAILED ROW:")
-            print(row.to_dict())
+            #print("FAILED ROW:")
+            #print(row.to_dict())
             raise e
 
     return pd.DataFrame(recommendations)
@@ -285,7 +285,7 @@ def get_dynamic_recommendation(detected_type, missing_percent):
     "auto": False
     }
         
-print(get_dynamic_recommendation("Identifier", 0))
-print(get_dynamic_recommendation("Identifier", 5))
-print(get_dynamic_recommendation("Financial", 3))
+#print(get_dynamic_recommendation("Identifier", 0))
+#print(get_dynamic_recommendation("Identifier", 5))
+#print(get_dynamic_recommendation("Financial", 3))
    
