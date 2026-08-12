@@ -38,7 +38,7 @@ Risk & Recommendations
 ```
 
 ## Project Structure
-```text
+
 Automated_Data_Cleaning_Assistant/
 │
 ├── app.py
@@ -59,15 +59,17 @@ Auto / Manual Cleaning
 Before & After Report
       ↓
 Download Clean Dataset
-```
+
+
 
 ## Run Locally
+```bash
 git clone https://github.com/YOUR_USERNAME/Automated_Data_Cleaning_Assistant.git
 cd Automated_Data_Cleaning_Assistant
 pip install -r requirements.txt
 streamlit run app.py
-
-#Author
-Shaurya Vishwakarma
+```
+# Author
+**Shaurya Vishwakarma**
 
 
