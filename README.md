@@ -1,4 +1,4 @@
-# 🧹 Automated Data Cleaning Assistant
+# Automated Data Cleaning Assistant
 
 An intelligent data quality and cleaning application built with **Python, Pandas, and Streamlit**.
 
@@ -35,9 +35,37 @@ Profile & Classify
 Quality Assessment
       ↓
 Risk & Recommendations
+```
+
+## Project Structure
+Automated_Data_Cleaning_Assistant/
+│
+├── app.py
+├── utils/
+│   ├── classifier.py
+│   ├── cleaner.py
+│   ├── dashboard.py
+│   ├── file_loader.py
+│   ├── profiler.py
+│   ├── quality.py
+│   └── recommendation.py
+│
+├── requirements.txt
+└── README.md
       ↓
 Auto / Manual Cleaning
       ↓
 Before & After Report
       ↓
 Download Clean Dataset
+
+## Run Locally
+git clone https://github.com/YOUR_USERNAME/Automated_Data_Cleaning_Assistant.git
+cd Automated_Data_Cleaning_Assistant
+pip install -r requirements.txt
+streamlit run app.py
+
+#Author
+Shaurya Vishwakarma
+
+
