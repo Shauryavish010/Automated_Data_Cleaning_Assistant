@@ -38,7 +38,7 @@ Risk & Recommendations
 ```
 
 ## Project Structure
-
+```text
 Automated_Data_Cleaning_Assistant/
 │
 ├── app.py
@@ -59,7 +59,7 @@ Auto / Manual Cleaning
 Before & After Report
       ↓
 Download Clean Dataset
-
+```
 
 
 ## Run Locally
