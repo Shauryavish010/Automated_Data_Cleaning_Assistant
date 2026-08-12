@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utils.profiler import get_dataset_summary, get_column_statistics
-from utils.cleaner import clean_data, auto_clean
+from utils.cleaner import clean_data, auto_clean, generate_cleaning_report
+from utils.report import generate_dataset_report
 from utils.dashboard import missing_value_summary, get_dashboard_metrics, get_top_risky_columns, get_risk_distribution, get_type_distribution
 from utils.file_loader import load_csv
 from utils.classifier import classify_columns
@@ -17,7 +18,15 @@ st.set_page_config(
 
 st.title("Automated Data Cleaning Assistant")
 
-st.write("Upload a CSV to analyze and clean your dataset.")
+st.markdown(
+    """
+    **Analyze → Detect → Recommend → Clean → Report**
+
+    Upload a CSV dataset to automatically assess data quality,
+    identify potential issues, generate intelligent cleaning
+    recommendations, and safely clean your data.
+    """
+)
 
 #File Uploader
 
@@ -26,23 +35,41 @@ uploaded_file = st.file_uploader(
      type=['csv']
 )
 
+with st.sidebar:
+    st.header("ADCA")
+    st.markdown("### Pipeline")
+    st.markdown(
+        """
+        1. 📁 Upload
+        2. 🔍 Profile
+        3. 🧠 Classify
+        4. 🩺 Assess Quality
+        5. 💡 Recommend
+        6. 🧹 Clean
+        7. 📋 Report
+        """
+    )
+    st.divider()
+    st.markdown("### Tech Stack")
+    st.caption("Python")
+    st.caption("Pandas")
+    st.caption("Streamlit")
+    st.caption("Plotly")
+
+    st.divider()
+
+    st.caption("Automated Data Cleaning Assistant")
+    st.caption("Version 1.0")
+
 #If file is uploaded
 if uploaded_file is not None:
     try:
         df = load_csv(uploaded_file)
-        st.success("File Uploaded Successfully")
-        st.dataframe(df.head())
-        st.subheader("Data Information")
-
-        st.subheader("Column Classification")
-        classification_df = classify_columns(df)
-        st.dataframe(
-            classification_df,
-            use_container_width=True,
-            hide_index=True
+        st.success(
+            f"Dataset loaded successfully - "
+            f"{df.shape[0]:,} rows x {df.shape[1]:,} columns"
         )
 
-        #Statistics
         summary = get_dataset_summary(df)
 
         rows = summary["rows"]
@@ -50,215 +77,368 @@ if uploaded_file is not None:
         missing_values = summary["missing_values"]
         duplicate_rows = summary["duplicate_rows"]
 
+
         classification_df = classify_columns(df)
         column_stats = get_column_statistics(df)
-
         recommendation_df = generate_recommendations(classification_df, column_stats)
-        st.subheader("Cleaning Recommendations")
-        st.dataframe(
-            recommendation_df,
-            width="stretch",
-            hide_index=True
-        )
+        quality = calculate_quality_score(df, column_stats, classification_df)
 
         dashboard_metrics = get_dashboard_metrics(recommendation_df)
-        st.subheader("Dataset Health Dashboard")
-        quality = calculate_quality_score(df, column_stats, classification_df)
-        col1, col2, col3, col4 = st.columns(4)
-
-        with col1:
-            st.metric("Overall Quality", f"{quality['Overall']}%")
-        with col2:
-            st.metric("High Risk", dashboard_metrics["high_risk"])
-        with col3:
-            st.metric("Medium Risk", dashboard_metrics["medium_risk"])
-        with col4:
-            st.metric("Low Risk", dashboard_metrics["low_risk"])
-
-        col5, col6, col7, col8 = st.columns(4)
-
-        with col5:
-            st.metric("P1 Priority", dashboard_metrics["p1"])
-        with col6:
-            st.metric("P2 Priority", dashboard_metrics["p2"])
-        with col7:
-            st.metric("P3 Priority", dashboard_metrics["p3"])
-        with col8:
-            st.metric("Auto Cleanable", dashboard_metrics["auto"])
-        
-
         top_risky = get_top_risky_columns(recommendation_df)
-        st.subheader("Top 5 Critical Columns")
-        st.dataframe(
-            top_risky,
-            width="stretch",
-            hide_index=True
-        )
-
         risk_distribution = get_risk_distribution(recommendation_df)
-        st.subheader("Risk Distribution")
-        st.bar_chart(risk_distribution.set_index("Risk"))
-
         type_distribution = get_type_distribution(classification_df)
-        st.subheader("Semantic Type Distribution")
-        st.bar_chart(type_distribution.set_index("Detected Type"))
 
-        st.subheader("Column Statistics")
-        st.dataframe(
-            column_stats,
-            width="stretch",
-            hide_index=True
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(
+            [
+                "Overview",
+                "Data Quality",
+                "Recommendation",
+                "Auto Cleaning",
+                "Manual Cleaning"
+            ]
         )
 
-        quality = calculate_quality_score(df, column_stats, classification_df)
-        st.subheader("Data Quality Score")
-        col1, col2, col3, col4, col5 = st.columns(5)
+        with tab1:
+            st.subheader("Dataset Overview")
+            col1, col2, col3, col4 = st.columns(4)
 
-        col1.metric("Overall", f"{quality['Overall']}%")
-        col2.metric("Completeness", f"{quality['Completeness']}%")
-        col3.metric("Uniqueness", f"{quality['Uniqueness']}%")
-        col4.metric("Validity", f"{quality['Validity']}%")
-        col5.metric("Consistency", f"{quality['Consistency']}%")
-
-        #Display metrics
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Rows", rows)
-        col2.metric("Total Columns", columns)
-        col3.metric("Missing Values", missing_values)
-        col4.metric("Duplicate Rows", duplicate_rows)
-
-        missing = missing_value_summary(df)
-
-        if not missing.empty:
-            st.subheader("Missing Values Summary")
-
-            fig = px.bar(
-                x = missing.index,
-                y = missing.values,
-                labels = {
-                    "x : Columns",
-                    "y : Missing Values"
-                },
-                title = "Missing Values Distribution"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.success("NO Missing Values Found")
-        
-        st.subheader("Column Data types")
-        st.dataframe(
-            df.dtypes.astype(str).reset_index().rename(
-                columns={
-                    "index": "Column Name",
-                    0: "Data Type"                
-                }
-            )
-        )
-
-        st.subheader("Missing Values by Columns")
-        missing_df = df.isnull().sum().reset_index()
-        missing_df.columns = ["Column Name", "Missing Values"]
-        with st.expander("View Missing Values Table"):
-            st.dataframe(missing_df, use_container_width=True)
-
-        #Data Cleaning Options 
-
-        st.subheader("Intelligent Auto Cleaning")
-        st.write(
-            "Automatically applies only safe cleaning operations "
-            "based on the recommendation engine."
-        )
-        if st.button("Auto Clean Dataset"):
-            cleaned_df, cleaning_summary = auto_clean(df, recommendation_df)
-            st.success("Dataset Cleaned")
-
-            cleaned_summary = get_dataset_summary(cleaned_df)
-            cleaned_column_stats = get_column_statistics(cleaned_df)
-            cleaned_classification = classify_columns(cleaned_df)
-            cleaned_quality = calculate_quality_score(
-                cleaned_df, cleaned_column_stats, cleaned_classification
-            )
-
-            comparison_df = pd.DataFrame({
-                "Metric":[
+            with col1:
+                st.metric(
+                    "Total Rows",
+                    f"{rows:,}"
+                )
+            with col2:
+                st.metric(
+                    "Total Columns",
+                    f"{columns:,}"
+                )
+            with col3:
+                st.metric(
                     "Missing Values",
+                    f"{missing_values:,}"
+                )
+            with col4:
+                st.metric(
                     "Duplicate Rows",
-                    "Quality Score"
-                ],
-                "Before":[
-                    missing_values,
-                    duplicate_rows,
-                    quality["Overall"]
-                ],
-                "After":[
-                    cleaned_summary["missing_values"],
-                    cleaned_summary["duplicate_rows"],
-                    cleaned_quality["Overall"]
-                ]
-            })
+                    f"{duplicate_rows:,}"
+                )
+            st.divider()
 
-            st.subheader("Before and After Comparison")
+            st.subheader("Dataset Preview")
             st.dataframe(
-                comparison_df, 
+                df.head(10),
+                width = "stretch",
+                hide_index = True
+            )
+            st.divider()
+
+            st.subheader("Semantic Type Distribution")
+            st.bar_chart(
+                type_distribution.set_index(
+                    "Detected Type"
+                )
+            )
+            st.divider()
+
+            st.subheader("Column Classification")
+            st.caption(
+                "Columns are classified using semantic rules "
+                "based on names, data types and value patterns."
+            )
+            st.dataframe(
+                classification_df,
                 width = "stretch",
                 hide_index = True
             )
 
-            st.subheader("Cleaning Summary")
-            for item in cleaning_summary:
-                st.write(f"{item}")
+        with tab2:
+            st.subheader("Data Quality Score")
 
-            st.subheader("Cleaned Data Preview")
+            col1, col2, col3, col4, col5 = st.columns(5)
+
+            with col1:
+                st.metric(
+                    "Overall",
+                    f"{quality['Overall']}%"
+                )
+            with col2:
+                st.metric(
+                    "Completeness",
+                    f"{quality['Completeness']}%"
+                )
+            with col3:
+                st.metric(
+                    "Uniqueness",
+                    f"{quality['Uniqueness']}%"
+                )
+            with col4:
+                st.metric(
+                    "Validity",
+                    f"{quality['Validity']}%"
+                )
+            with col5:
+                st.metric(
+                    "Consistency",
+                    f"{quality['Consistency']}%"
+                )
+            st.divider()
+
+
+            st.subheader("Risk Overview")
+            col1, col2, col3, col4 = st.columns(4)
+
+            with col1:
+                st.metric(
+                    "High Risk",
+                    dashboard_metrics["high_risk"]
+                )
+            with col2:
+                st.metric(
+                    "Medium Risk",
+                    dashboard_metrics["medium_risk"]
+                )
+            with col3:
+                st.metric(
+                    "Low Risk",
+                    dashboard_metrics["low_risk"]
+                )
+            with col4:
+                st.metric(
+                    "Auto Cleanable",
+                    dashboard_metrics["auto"]
+                )
+            st.divider()
+
+            st.subheader("Risk Distribution")
+            st.bar_chart(
+                risk_distribution.set_index("Risk")
+            )
+            st.divider()
+
+            st.subheader("Top 5 Critical Column")
+            st.caption("Columns ranked by risk score and priority.")
+
             st.dataframe(
-                cleaned_df.head(10),
-                width = "stretch"
+                top_risky,
+                width = "stretch",
+                hide_index = True
             )
+            st.divider()
 
-            st.download_button(
-                label = "Download Auto Cleaned CSV",
-                data = cleaned_df.to_csv(index = False),
-                file_name = "auto_cleaned_dataset.csv",
-                mime = "text/csv"
-            )
+            st.subheader("Missing Values Distribution")
+            missing = missing_value_summary(df)
 
-        st.subheader("Data Cleaning Options")
-        remove_duplicates = st.checkbox("Remove Duplicate Rows")
-        fill_missing = st.checkbox("Fill Missing Values")
-        convert_datetime = st.checkbox("Convert Date Columns Automatically")
-        trim_spaces = st.checkbox("Trim Extra Spaces from Text Columns")
+            if not missing.empty:
+                fig = px.bar(
+                    x = missing.index,
+                    y = missing.values,
+                    labels = {
+                        "x" : "Columns",
+                        "y" : "Missing Values"
+                    },
+                    title = "Missing Values by Column"
+                )
 
+                st.plotly_chart(
+                    fig, 
+                    width = "stretch"
+                )
 
-        if st.button("Clean Data"):
-
-            cleaned_df, cleaning_summary = clean_data(
-                df,
-                remove_duplicates=remove_duplicates,
-                fill_missing=fill_missing,
-                convert_datetime=convert_datetime,
-                trim_spaces=trim_spaces
-            )
-
-            st.success("Data cleaning completed!")
-
-            st.subheader("Cleaning Summary")
-
-            if cleaning_summary:
-                for item in cleaning_summary:
-                    st.write(f"{item}")
             else:
-                st.info("No cleaning operations were selected.")
+                st.success("No missing values found.")
 
-            st.subheader("Cleaned Data Preview")
-            st.dataframe(cleaned_df.head(10))
+            st.divider()
 
-            st.download_button(
-                label="Download Cleaned CSV",
-                data=cleaned_df.to_csv(index=False),
-                file_name="cleaned_data.csv",
-                mime="text/csv"
+            st.subheader("Column Statistics")
+            st.dataframe(
+                column_stats,
+                width = "stretch",
+                hide_index = True
             )
 
+        with tab3:
+            st.subheader("Cleaning Recommendation")
+            st.markdown(
+                """
+                Recommendations are generated using:
+
+                - Semantic column classification
+                - Missing-value patterns
+                - Risk scoring
+                - Priority assignment
+                - Auto-applicable cleaning rules
+                """
+            )
+
+            st.info(
+                "P1 = Highest Priority | "
+                "P2 = Medium Priority | "
+                "P3 = Low Priority"
+            )
+
+            st.dataframe(
+                recommendation_df,
+                width = "stretch",
+                hide_index = True
+            )
+
+        with tab4:
+            st.subheader("Intelligent Auto Cleaning")
+            st.markdown(
+                """Automatically applies only safe cleaning operations 
+                recommended by the recommendation engine"""
+            )
+            st.markdown(
+                "Only recommendation marked as "
+                "'Auto-Applicable' willbe executed automatically" 
+            )
+
+            if st.button(
+                "Auto Clean Dataset",
+                type = "primary",
+                width = "stretch"
+            ):
+                cleaned_df, cleaning_summary = auto_clean(df, recommendation_df)
+                st.success("Dataset Cleaned Sucessfully")
+
+                cleaning_report = generate_cleaning_report(cleaning_summary)
+                st.subheader("Cleaning Report")
+                for line in cleaning_report:
+                    st.write(line)
+                st.divider()
+
+                cleaned_summary = get_dataset_summary(cleaned_df)
+                cleaned_column_stats = get_column_statistics(cleaned_df)
+                cleaned_classification = classify_columns(cleaned_df)
+                cleaned_quality = calculate_quality_score(cleaned_df, cleaned_column_stats, cleaned_classification)
+
+                st.subheader("Before vs After")
+                col1, col2, col3 = st.columns(3)
+
+                quality_change = round(cleaned_quality["Overall"] - quality["Overall"], 2)
+                missing_change = round(cleaned_summary["missing_values"] - missing_values)
+                duplicate_change = round(cleaned_summary["duplicate_rows"] - duplicate_rows)
+
+                with col1:
+                    st.metric(
+                        "Quality Score",
+                        f"{cleaned_quality['Overall']}%",
+                        delta = f"{quality_change:+.2f}%"
+                    )
+                with col2:
+                    st.metric(
+                        "Missing Values",
+                        f"{cleaned_summary['missing_values']:,}",
+                        delta = f"{missing_values:,}"
+                    )
+                with col3:
+                    st.metric(
+                        "Duplicate Rows",
+                        f"{cleaned_summary['duplicate_rows']:,}",
+                        delta = f"{duplicate_change:,}"
+                    )
+                st.divider()
+
+                comparison_df = pd.DataFrame(
+                    {
+                        "Metric": ["Missing Values", "Duplicate Rows", "Quality Score"],
+                        "Before": [missing_values, duplicate_rows, quality["Overall"]],
+                        "After": [cleaned_summary["missing_values"], cleaned_summary["duplicate_rows"], cleaned_quality["Overall"]]
+                    }
+                )
+
+                st.dataframe(
+                    comparison_df,
+                    width = "stretch",
+                    hide_index = True
+                )
+
+                st.divider()
+
+                st.subheader("Dataset Assessment Report")
+                ai_report = generate_dataset_report(cleaned_summary, cleaned_quality, recommendation_df, cleaning_report)
+                st.markdown(ai_report)
+
+                st.divider()
+
+                st.subheader("Cleaned Dataset Preview")
+
+                st.dataframe(
+                    cleaned_df.head(10),
+                    width = "stretch",
+                    hide_index = True
+                )
+
+                st.download_button(
+                    label = "Download Cleaned Dataset",
+                    data = cleaned_df.to_csv(index = False),
+                    file_name = "auto_cleaned_dataset.csv",
+                    mime = "text/csv",
+                    width = "stretch"
+                )
+
+        with tab5:
+            st.subheader("Manual Data Cleaning")
+            st.caption(
+                "Use these controls when you want direct control "
+                "over cleaning option"
+            )
+
+            remove_duplicates = st.checkbox("Remove Duplicate Rows")
+            fill_missing = st.checkbox("Fill Missing Values")
+            convert_datetime = st.checkbox("Convert Date Columns Automatically")
+            trim_spaces = st.checkbox("Trim Extra Spaces from Text Columns")
+
+            if st.button (
+                "Clean Data",
+                type = "primary"
+            ):
+                cleaned_df, cleaning_summary = clean_data(df, remove_duplicates=remove_duplicates, 
+                                                          fill_missing=fill_missing,
+                                                          convert_datetime=convert_datetime,
+                                                          trim_spaces=trim_spaces)
+                st.success("Data Cleaning Completed")
+                st.dataframe(
+                    cleaned_df.head(10),
+                    width = "stretch",
+                    hide_index = True
+                )
+                if cleaning_summary:
+                    st.subheader("Cleaning Summary")
+
+                    for item in cleaning_summary:
+                        st.write(f"{item}")
+                else:
+                    st.info("No cleaning operation were selected")
+
+                st.download_button(
+                    label = "Download Cleaned Dataset",
+                    data = cleaned_df.to_csv(index= False),
+                    file_name = "cleaned_data.csv",
+                    mime = "text/csv"
+                )
 
     except Exception as e:
-        st.error(f"Error reading file: {e}")
+        st.error(f"Error Reading file: {e}")
+        st.exception(e)
 
+
+else:
+    st.info("Upload a CSV file to get started.")
+
+    st.markdown(
+         """
+        ### What ADCA can do
+
+        | Feature | Description |
+        |---|---|
+        | Profiling | Analyze dataset structure |
+        | Classification | Detect semantic column types |
+        | Quality Score | Measure dataset health |
+        | Recommendations | Suggest cleaning actions |
+        | Risk Engine | Prioritize data issues |
+        | Auto Cleaning | Apply safe cleaning rules |
+        | Reports | Generate dataset assessment |
+        | ⬇Export | Download cleaned datasets |
+        """
+    )
